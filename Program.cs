@@ -8,9 +8,8 @@ namespace TaskManager;
 
 internal class Program
 {
-
-    static private HashSet<string> _stop_words = new String[] { "/stop", "/shutdown", "/STOP" }.ToHashSet();
-    static private HashSet<string> _help_words = new String[] { "/help", "/HELP" }.ToHashSet();
+    private static readonly HashSet<string> StopWords = new String[] { "/stop", "/shutdown", "/STOP" }.ToHashSet();
+    private static readonly HashSet<string> HelpWords = new String[] { "/help", "/HELP" }.ToHashSet();
 
     static ProgramState State = new ProgramState();
 
@@ -23,9 +22,9 @@ internal class Program
         {
             string[] command = Console.ReadLine().Split(' ');
 
-            if (_stop_words.Contains(command[0]))
+            if (StopWords.Contains(command[0]))
                 break;
-            if (_help_words.Contains(command[0]))
+            if (HelpWords.Contains(command[0]))
             {
                 ShowHelp();
                 continue;
@@ -37,30 +36,24 @@ internal class Program
                     ShowAllTasks(x => true);
                     break;
                 case "/show-undone":
-                    ShowAllTasks(x => !x.is_done());
+                    ShowAllTasks(x => !x.IsDone());
                     break;
                 case "/show-done":
-                    ShowAllTasks(x => x.is_done());
+                    ShowAllTasks(x => x.IsDone());
                     break;
                 case "/show-today":
                     ShowAllTasks(x =>
                         (x.GetType() == typeof(TaskGroup)) || x.GetType() == typeof(SubTask) ||
-                        (x.GetType() == typeof(Task) && x.is_time_timited()) &&
-                        x.get_time_limit().Year == DateTime.Today.Year &&
-                        x.get_time_limit().Month == DateTime.Today.Month &&
-                        x.get_time_limit().Day == DateTime.Today.Day);
+                        (x.GetType() == typeof(Task) && x.IsTimeTimited()) &&
+                        x.GetTimeLimit().Year == DateTime.Today.Year &&
+                        x.GetTimeLimit().Month == DateTime.Today.Month &&
+                        x.GetTimeLimit().Day == DateTime.Today.Day);
                     break;
                 case "/create-task":
-                    if (command.Length == 1)
-                        CreateTask("");
-                    else
-                        CreateTask(String.Join(" ", command[1..]));
+                    CreateTask(command.Length > 1 ? String.Join(" ", command[1..]) : "");
                     break;
                 case "/create-group":
-                    if (command.Length == 1)
-                        CreateGroup("");
-                    else
-                        CreateGroup(String.Join(" ", command[1..]));
+                    CreateGroup(command.Length > 1 ? String.Join(" ", command[1..]) : "");
                     break;
                 case "/add-task-to-group":
                     TaskToGroup(Convert.ToUInt32(command[1].Substring(0, command[1].Length - 2)),
@@ -72,7 +65,7 @@ internal class Program
                     break;
                 case "/bind-subtask":
                     CreateSubTask(Convert.ToUInt32(command[1].Substring(0, command[1].Length - 2)),
-                        (command.Length) == 2 ? "" : String.Join(" ", command[2..]));
+                        command.Length == 2 ? "" : String.Join(" ", command[2..]));
                     break;
                 case "/mark-done":
                     string typin = command[1].Substring(command[1].Length - 2, 2);
@@ -109,11 +102,11 @@ internal class Program
                     SetTimeLimit(Convert.ToUInt32(command[1].Substring(0, command[1].Length - 2)), time_tag);
                     break;
                 case "/save":
-                    State.save(command[1]);
+                    State.Save(command[1]);
                     Console.WriteLine("Saved to {0}", command[1]);
                     break;
                 case "/load":
-                    State.load(command[1]);
+                    State.Load(command[1]);
                     Console.WriteLine("Loaded from {0}", command[1]);
                     break;
                 case "/hard-reset":
@@ -129,180 +122,180 @@ internal class Program
         Console.WriteLine("TaskManager is being closed");
     }
 
-    static void DeleteTask(uint tsid)
+    static void DeleteTask(uint taskId)
     {
-        if (State._tasks.ContainsKey(tsid))
-            State._tasks.Remove(tsid);
+        if (State.Tasks.ContainsKey(taskId))
+            State.Tasks.Remove(taskId);
         else
-            foreach (uint parent in State.tasks_in_groups.Keys)
+            foreach (uint parent in State.TasksInGroups.Keys)
             {
-                foreach (Task ts in State.tasks_in_groups[parent])
-                    if (ts.get_id() == tsid)
+                foreach (Task task in State.TasksInGroups[parent])
+                    if (task.GetId() == taskId)
                     {
-                        State.tasks_in_groups[parent].Remove(ts);
+                        State.TasksInGroups[parent].Remove(task);
                         return;
                     }
             }
     }
 
-    static void DeleteSubTask(uint stid)
+    static void DeleteSubTask(uint subTaskId)
     {
-        foreach (uint parent in State.subtasks_in_tasks.Keys)
+        foreach (uint parent in State.SubtasksInTasks.Keys)
         {
-            foreach (SubTask st in State.subtasks_in_tasks[parent])
-                if (st.get_id() == stid)
+            foreach (SubTask subTask in State.SubtasksInTasks[parent])
+                if (subTask.GetId() == subTaskId)
                 {
-                    State.subtasks_in_tasks[parent].Remove(st);
+                    State.SubtasksInTasks[parent].Remove(subTask);
                     return;
                 }
         }
     }
 
-    static void DeleteTaskGroup(uint grid)
+    static void DeleteTaskGroup(uint groupId)
     {
-        if (!State._taskgroups.ContainsKey(grid)) return;
-        State._taskgroups.Remove(grid);
-        if (!State.tasks_in_groups.ContainsKey(grid))
-            State.tasks_in_groups.Remove(grid);
+        if (!State.TaskGroups.ContainsKey(groupId)) return;
+        State.TaskGroups.Remove(groupId);
+        if (!State.TasksInGroups.ContainsKey(groupId))
+            State.TasksInGroups.Remove(groupId);
     }
 
     static void CreateTask(string name)
     {
-        State._tasks.Add(++State._last_task_id,
-            new Task(State._last_task_id,
-                (name.Length > 0) ? name : String.Format("unnamed{0}", State._last_task_id.ToString())));
-        Console.WriteLine("Task created. Id: {0}ts", State._last_task_id.ToString());
+        State.Tasks.Add(++State.LastTaskId,
+            new Task(State.LastTaskId,
+                (name.Length > 0) ? name : String.Format("unnamed{0}", State.LastTaskId.ToString())));
+        Console.WriteLine("Task created. Id: {0}ts", State.LastTaskId.ToString());
     }
 
     static void CreateGroup(string name)
     {
-        State._taskgroups.Add(++State._last_group_id,
-            new TaskGroup(State._last_group_id,
-                (name.Length > 0) ? name : String.Format("unnamed{0}", State._last_group_id.ToString())));
-        Console.WriteLine("Group created. Id: {0}gr", State._last_group_id.ToString());
+        State.TaskGroups.Add(++State.LastGroupId,
+            new TaskGroup(State.LastGroupId,
+                (name.Length > 0) ? name : String.Format("unnamed{0}", State.LastGroupId.ToString())));
+        Console.WriteLine("Group created. Id: {0}gr", State.LastGroupId.ToString());
     }
 
-    static void TaskToGroup(uint taskid, uint groupid)
+    static void TaskToGroup(uint taskId, uint groupId)
     {
-        if (!State.tasks_in_groups.ContainsKey(groupid))
-            State.tasks_in_groups.Add(groupid, new List<Task>());
-        State.tasks_in_groups[groupid].Add(State._tasks[taskid]);
-        State._tasks.Remove(taskid);
+        if (!State.TasksInGroups.ContainsKey(groupId))
+            State.TasksInGroups.Add(groupId, new List<Task>());
+        State.TasksInGroups[groupId].Add(State.Tasks[taskId]);
+        State.Tasks.Remove(taskId);
     }
 
-    static void TaskFromGroup(uint taskid, uint groupid)
+    static void TaskFromGroup(uint taskId, uint groupId)
     {
-        if (!State.tasks_in_groups.ContainsKey(groupid)) return;
-        foreach (Task ts in State.tasks_in_groups[groupid])
-            if (ts.get_id() == taskid)
+        if (!State.TasksInGroups.ContainsKey(groupId)) return;
+        foreach (Task task in State.TasksInGroups[groupId])
+            if (task.GetId() == taskId)
             {
-                State._tasks.Add(taskid, ts);
-                State.tasks_in_groups[groupid].Remove(ts);
+                State.Tasks.Add(taskId, task);
+                State.TasksInGroups[groupId].Remove(task);
                 return;
             }
     }
 
-    static void ShowAllTasks(Func<TasksGeneric, bool> pred)
+    static void ShowAllTasks(Func<TasksGeneric, bool> predicateFunc)
     {
-        foreach (Task ts in State._tasks.Values)
+        foreach (Task task in State.Tasks.Values)
         {
-            if (!pred(ts))
+            if (!predicateFunc(task))
                 continue;
-            Console.WriteLine(ts.ToString());
-            if (!State.subtasks_in_tasks.ContainsKey(ts.get_id()))
+            Console.WriteLine(task.ToString());
+            if (!State.SubtasksInTasks.ContainsKey(task.GetId()))
                 continue;
-            foreach (SubTask st in State.subtasks_in_tasks[ts.get_id()])
+            foreach (SubTask subTask in State.SubtasksInTasks[task.GetId()])
             {
-                if (!pred(st))
+                if (!predicateFunc(subTask))
                     continue;
-                Console.WriteLine("\t{0}", st.ToString());
+                Console.WriteLine("\t{0}", subTask.ToString());
             }
         }
 
-        foreach (TaskGroup temp_group in State._taskgroups.Values)
+        foreach (TaskGroup tempGroup in State.TaskGroups.Values)
         {
-            if (!pred(temp_group))
+            if (!predicateFunc(tempGroup))
                 continue;
-            Console.WriteLine(temp_group.ToString());
-            if (!State.tasks_in_groups.ContainsKey(temp_group.get_id()))
+            Console.WriteLine(tempGroup.ToString());
+            if (!State.TasksInGroups.ContainsKey(tempGroup.GetId()))
                 continue;
-            foreach (Task ts in State.tasks_in_groups[temp_group.get_id()])
+            foreach (Task task in State.TasksInGroups[tempGroup.GetId()])
             {
-                if (!pred(ts))
+                if (!predicateFunc(task))
                     continue;
-                Console.WriteLine("\t{0}", ts.ToString());
-                if (!State.subtasks_in_tasks.ContainsKey(ts.get_id()))
+                Console.WriteLine("\t{0}", task.ToString());
+                if (!State.SubtasksInTasks.ContainsKey(task.GetId()))
                     continue;
-                foreach (SubTask st in State.subtasks_in_tasks[ts.get_id()])
+                foreach (SubTask subTask in State.SubtasksInTasks[task.GetId()])
                 {
-                    if (!pred(st))
+                    if (!predicateFunc(subTask))
                         continue;
-                    Console.WriteLine("\t\t{0}", st.ToString());
+                    Console.WriteLine("\t\t{0}", subTask.ToString());
                 }
             }
         }
     }
 
-    static void CreateSubTask(uint taskid, string name)
+    static void CreateSubTask(uint taskId, string name)
     {
-        if (!State.subtasks_in_tasks.ContainsKey(taskid))
-            State.subtasks_in_tasks.Add(taskid, new List<SubTask>());
-        State.subtasks_in_tasks[taskid]
-            .Add(new SubTask(++State._last_subtask_id,
-                (name.Length > 0) ? name : "unnamed" + State._last_task_id));
+        if (!State.SubtasksInTasks.ContainsKey(taskId))
+            State.SubtasksInTasks.Add(taskId, new List<SubTask>());
+        State.SubtasksInTasks[taskId]
+            .Add(new SubTask(++State.LastSubtaskId,
+                (name.Length > 0) ? name : "unnamed" + State.LastTaskId));
     }
 
-    static void MarkTaskDone(uint taskid)
+    static void MarkTaskDone(uint taskId)
     {
-        if (State._tasks.ContainsKey(taskid))
+        if (State.Tasks.ContainsKey(taskId))
         {
-            State._tasks[taskid].mark_done();
+            State.Tasks[taskId].MarkDone();
             return;
         }
 
-        foreach (List<Task> ls in State.tasks_in_groups.Values)
+        foreach (List<Task> listTasks in State.TasksInGroups.Values)
         {
-            foreach (Task ts in ls)
+            foreach (Task task in listTasks)
             {
-                if (ts.get_id() == taskid)
+                if (task.GetId() == taskId)
                 {
-                    ts.mark_done();
+                    task.MarkDone();
                     return;
                 }
             }
         }
     }
 
-    static void MarkSubTaskDone(uint taskid)
+    static void MarkSubTaskDone(uint taskId)
     {
-        foreach (List<SubTask> ls in State.subtasks_in_tasks.Values)
+        foreach (List<SubTask> listTasks in State.SubtasksInTasks.Values)
         {
-            foreach (SubTask st in ls)
+            foreach (SubTask subTask in listTasks)
             {
-                if (st.get_id() == taskid)
+                if (subTask.GetId() == taskId)
                 {
-                    st.mark_done();
+                    subTask.MarkDone();
                     return;
                 }
             }
         }
     }
 
-    static void SetTimeLimit(uint taskid, DateTime dl)
+    static void SetTimeLimit(uint taskId, DateTime dateLimit)
     {
-        if (State._tasks.ContainsKey(taskid))
+        if (State.Tasks.ContainsKey(taskId))
         {
-            State._tasks[taskid].give_time_limit(dl);
+            State.Tasks[taskId].GiveTimeLimit(dateLimit);
             return;
         }
 
-        foreach (List<Task> ls in State.tasks_in_groups.Values)
+        foreach (List<Task> listTasks in State.TasksInGroups.Values)
         {
-            foreach (Task ts in ls)
+            foreach (Task task in listTasks)
             {
-                if (ts.get_id() == taskid)
+                if (task.GetId() == taskId)
                 {
-                    ts.give_time_limit(dl);
+                    task.GiveTimeLimit(dateLimit);
                     return;
                 }
             }
@@ -314,8 +307,8 @@ internal class Program
         Console.WriteLine(String.Concat(Enumerable.Repeat("-", 15)));
         Console.WriteLine("COMMANDS:");
         Console.WriteLine(String.Concat(Enumerable.Repeat("-", 15)));
-        Console.WriteLine("{0} - ask for help", string.Join(" ", _help_words));
-        Console.WriteLine("{0} - stutdown app", string.Join(" ", _stop_words));
+        Console.WriteLine("{0} - ask for help", string.Join(" ", HelpWords));
+        Console.WriteLine("{0} - stutdown app", string.Join(" ", StopWords));
         Console.WriteLine("/list-tasks - show all your tasks and taskgroups");
         Console.WriteLine("/show-undone - show tasks/subtasks which is undone");
         Console.WriteLine("/show-done - show tasks/subtasks which is done");

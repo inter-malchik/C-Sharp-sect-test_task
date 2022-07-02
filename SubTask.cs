@@ -9,6 +9,6 @@ class SubTask : TasksGeneric
 
     public new string ToString()
     {
-        return string.Format("[{0}] ({1}st) {2}", ((done) ? "X" : " "), identificator.ToString(), summary);
+        return string.Format("[{0}] ({1}st) {2}", ((done) ? "X" : " "), Identificator.ToString(), Summary);
     }
 }

@@ -9,6 +9,6 @@ class TaskGroup : TasksGeneric
 
     public new string ToString()
     {
-        return string.Format("Task-group ({0}tg) {1}" ,identificator.ToString(),summary);
+        return string.Format("Task-group ({0}tg) {1}" ,Identificator.ToString(),Summary);
     }
 }

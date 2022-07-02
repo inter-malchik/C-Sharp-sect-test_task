@@ -17,23 +17,23 @@ class Task : TasksGeneric
     private bool time_limited;
     private DateTime time_limit;
 
-    public bool is_time_limited()
+    public bool IsTimeLimited()
     {
         return time_limited;
     }
 
-    public new DateTime get_time_limit()
+    public new DateTime GetTimeLimit()
     {
         return time_limit;
     }
 
-    public void give_time_limit(DateTime limit)
+    public void GiveTimeLimit(DateTime limit)
     {
         time_limit = limit;
         time_limited = true;
     }
 
-    public new void mark_done()
+    public new void MarkDone()
     {
         done = true;
         time_limited = false;
@@ -43,9 +43,9 @@ class Task : TasksGeneric
     public new string ToString()
     {
         if (!time_limited)
-            return string.Format("[{0}] ({1}ts) {2}", ((done) ? "X" : " "), identificator.ToString(), summary);
+            return string.Format("[{0}] ({1}ts) {2}", ((done) ? "X" : " "), Identificator.ToString(), Summary);
 
         return string.Format("[{0}] {1} ({2}ts) {3}", ((done) ? "X" : " "), time_limit.ToString(),
-            identificator.ToString(), summary);
+            Identificator.ToString(), Summary);
     }
 }

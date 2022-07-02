@@ -3,43 +3,43 @@ namespace TaskManager;
 [Serializable]
 class TasksGeneric
 {
-    protected uint identificator;
-    protected string summary;
+    protected uint Identificator;
+    protected string Summary;
     protected bool done;
 
     public TasksGeneric(uint id, string name)
     {
-        identificator = id;
-        summary = name;
+        Identificator = id;
+        Summary = name;
         done = false;
     }
 
-    public uint get_id()
+    public uint GetId()
     {
-        return identificator;
+        return Identificator;
     }
 
-    public string get_summary()
+    public string GetSummary()
     {
-        return summary;
+        return Summary;
     }
 
-    public bool is_done()
+    public bool IsDone()
     {
         return done;
     }
 
-    public void mark_done()
+    public void MarkDone()
     {
         done = true;
     }
 
-    public bool is_time_timited()
+    public bool IsTimeTimited()
     {
         return false;
     }
 
-    public DateTime get_time_limit()
+    public DateTime GetTimeLimit()
     {
         return DateTime.MinValue;
     }
